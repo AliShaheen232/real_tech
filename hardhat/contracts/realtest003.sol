@@ -690,6 +690,12 @@ contract REALtest003 is Ownable {
         require(price > 0, "Invalid price feed data");
 
         uint256 depositedAmount = (msg.value * uint256(price) * DENOMINATOR * (10 ** real.decimals())) / (stage.price * (10 ** usdt.decimals()) * (10 ** 26));
+           //10^6      
+
+        /**
+         * // Corrected formula (assuming USDT=6 decimals, REAL=18 decimals, Chainlink price=8 decimals)
+        uint256 ethValueInUSD = (msg.value * uint256(price)) / (10 ** 26); // 1e18 (wei) * 1e8 (price) / 1e26 = USD (6 decimals)
+            */
 
         userDeposited[_stageId][msg.sender] += depositedAmount;
         totalDeposited += depositedAmount;
@@ -709,7 +715,7 @@ contract REALtest003 is Ownable {
         SafeERC20.safeTransferFrom(IERC20(address(usdt)), msg.sender, address(this), _amount);
 
         uint256 depositedAmount = (_amount * DENOMINATOR * (10 ** real.decimals())) / (stage.price * 10 ** usdt.decimals());
-
+                                    
         userDeposited[_stageId][msg.sender] += depositedAmount;
         totalDeposited += depositedAmount;
         stage.totalUSDTCollected += _amount;
