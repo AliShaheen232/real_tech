@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
     // uint256 public HARDCAP = 1_100_000 ether;
     uint256 public constant DENOMINATOR = 10000;
-    uint256 public nativeTokenPriceInUSDT;
+    uint256 public realPriceInUSDT;
     uint256 public HARDCAP;
     uint256 public totalDeposited;
     uint64 public icoDuration; // in seconds
@@ -51,7 +51,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         address _real,
         address _usdt,
         address _usdc,
-        uint256 _nativeTokenPriceInUSDT,
+        uint256 _realPriceInUSDT,
         uint256 _hardCAP
     ) Ownable(msg.sender) {
         // priceFeed = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
@@ -61,7 +61,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         real = IERC20(_real);
         usdt = IERC20(_usdt);
         usdc = IERC20(_usdc);
-        nativeTokenPriceInUSDT = _nativeTokenPriceInUSDT;
+        realPriceInUSDT = _realPriceInUSDT;
         HARDCAP = _hardCAP;
     }
 
@@ -135,15 +135,17 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
 
         require(msg.value > 0, "Presale: Should be greater than 0");
 
-        (, int256 price, , uint256 updatedAt, ) = priceFeed.latestRoundData();
+        (, uint256 price, , uint256 updatedAt, ) = getLatestETHPrice();
         require(price > 0, "Invalid price feed data");
         require(block.timestamp - updatedAt < 1 hours, "Stale price");
 
-        uint256 depositedAmount = (msg.value *
-            uint256(price) *
-            DENOMINATOR *
-            (10 ** real.decimals())) /
-            (stage.price * (10 ** usdt.decimals()) * (10 ** 26));
+        // uint256 depositedAmount = (msg.value *
+        //     uint256(price) *
+        //     DENOMINATOR *
+        //     (10 ** real.decimals())) /
+        //     (stage.price * (10 ** usdt.decimals()) * (10 ** 26));
+
+        uint256 depositedAmount = (msg.value * price) / realPriceInUSDT;
 
         userDeposited[_stageId][msg.sender] += depositedAmount;
         totalDeposited += depositedAmount;
@@ -289,6 +291,13 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         return true;
     }
 
+    function setRealPriceInUSDT(
+        uint256 newPriceInUSDT
+    ) external onlyOwner returns (bool) {
+        realPriceInUSDT = newPriceInUSDT;
+        return true;
+    }
+
     function withdrawETH(uint256 amount) external onlyOwner {
         require(
             address(this).balance >= amount,
@@ -329,9 +338,9 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         emit REALWithdrawn(amount);
     }
 
-    function getLatestETHPrice() external view returns (uint256) {
-        (, int price, , , ) = priceFeed.latestRoundData();
-        return uint256(price) * 10 ** 10; // Convert to 18 decimals
+    function getLatestETHPrice() external view returns (uint256, uint256) {
+        (, int256 price, , uint256 updatedAt, ) = priceFeed.latestRoundData();
+        return ((uint256(price) * 10 ** 10), updatedAt); // Convert to 18 decimals
     }
 
     event ICOStarted(
