@@ -12,6 +12,8 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
     // uint256 public HARDCAP = 1_100_000 ether;
     uint256 public constant DENOMINATOR = 10000;
     uint256 public realPriceInUSDT;
+    uint256 public realPriceInUSDC;
+    uint256 public realPriceInDAI;
     uint256 public HARDCAP;
     uint256 public totalDeposited;
     uint64 public icoDuration; // in seconds
@@ -22,6 +24,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
     IERC20 public immutable real;
     IERC20 public immutable usdt;
     IERC20 public immutable usdc;
+    IERC20 public immutable dai;
 
     mapping(uint32 => mapping(address => uint256)) public userDeposited;
     mapping(uint32 => mapping(address => bool)) public userClaimed;
@@ -33,6 +36,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         uint256 totalETHCollected;
         uint256 totalUSDTCollected;
         uint256 totalUSDCCollected;
+        uint256 totalDAICollected;
         uint256 price;
     }
 
@@ -51,7 +55,10 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         address _real,
         address _usdt,
         address _usdc,
+        address _dai,
         uint256 _realPriceInUSDT,
+        uint256 _realPriceInUSDC,
+        uint256 _realPriceInDAI,
         uint256 _hardCAP
     ) Ownable(msg.sender) {
         // priceFeed = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
@@ -61,7 +68,10 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         real = IERC20(_real);
         usdt = IERC20(_usdt);
         usdc = IERC20(_usdc);
+        dai = IERC20(_dai);
         realPriceInUSDT = _realPriceInUSDT;
+        realPriceInUSDC = _realPriceInUSDC;
+        realPriceInDAI = _realPriceInDAI;
         HARDCAP = _hardCAP;
     }
 
@@ -90,6 +100,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
                 totalETHCollected: 0,
                 totalUSDTCollected: 0,
                 totalUSDCCollected: 0,
+                totalDAICollected: 0,
                 price: _price
             })
         );
@@ -178,11 +189,11 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
             _amount
         );
 
-        uint256 depositedAmount = (_amount *
-            DENOMINATOR *
-            (10 ** real.decimals())) / (stage.price * 10 ** usdt.decimals());
+        // uint256 depositedAmount = (_amount *
+        //     DENOMINATOR *
+        //     (10 ** real.decimals())) / (stage.price * 10 ** usdt.decimals());
 
-        // (1000000*10000*10^18)/(55000*10^6)
+        uint256 depositedAmount = _amount / realPriceInUSDT;
 
         userDeposited[_stageId][msg.sender] += depositedAmount;
         totalDeposited += depositedAmount;
@@ -215,9 +226,10 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
             _amount
         );
 
-        uint256 depositedAmount = (_amount *
-            DENOMINATOR *
-            (10 ** real.decimals())) / (stage.price * 10 ** usdc.decimals());
+        // uint256 depositedAmount = (_amount *
+        //     DENOMINATOR *
+        //     (10 ** real.decimals())) / (stage.price * 10 ** usdc.decimals());
+        uint256 depositedAmount = _amount / realPriceInUSDC;
 
         userDeposited[_stageId][msg.sender] += depositedAmount;
         totalDeposited += depositedAmount;
@@ -226,6 +238,39 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         require(totalDeposited <= HARDCAP, "Presale: Hardcap reached");
 
         emit REALPurchasedWithUSDC(
+            msg.sender,
+            _stageId,
+            _amount,
+            userDeposited[_stageId][msg.sender]
+        );
+    }
+
+    function buyREALWithDAI(
+        uint32 _stageId,
+        uint256 _amount
+    ) external whenNotPaused nonReentrant validStage(_stageId) {
+        require(getStageStatus(_stageId), "Presale: In-active stage ID");
+        require(getICOStatus(), "Presale: In-active ICO");
+
+        Stage storage stage = stages[_stageId];
+
+        require(_amount > 0, "Presale: Should be greater than 0");
+        SafeERC20.safeTransferFrom(
+            IERC20(address(usdc)),
+            msg.sender,
+            address(this),
+            _amount
+        );
+
+        uint256 depositedAmount = _amount / realPriceInDAI;
+
+        userDeposited[_stageId][msg.sender] += depositedAmount;
+        totalDeposited += depositedAmount;
+        stage.totalDAICollected += _amount;
+
+        require(totalDeposited <= HARDCAP, "Presale: Hardcap reached");
+
+        emit REALPurchasedWithDAI(
             msg.sender,
             _stageId,
             _amount,
@@ -291,10 +336,14 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         return true;
     }
 
-    function setRealPriceInUSDT(
-        uint256 newPriceInUSDT
+    function setRealPriceT(
+        uint256 _realPriceInUSDT,
+        uint256 _realPriceInUSDC,
+        uint256 _realPriceInDAI
     ) external onlyOwner returns (bool) {
-        realPriceInUSDT = newPriceInUSDT;
+        realPriceInUSDT = _realPriceInUSDT;
+        realPriceInUSDC = _realPriceInUSDC;
+        realPriceInDAI = _realPriceInDAI;
         return true;
     }
 
@@ -375,6 +424,12 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         uint256 _quoteAmount
     );
     event REALPurchasedWithUSDC(
+        address indexed _user,
+        uint32 indexed _stage,
+        uint256 _baseAmount,
+        uint256 _quoteAmount
+    );
+    event REALPurchasedWithDAI(
         address indexed _user,
         uint32 indexed _stage,
         uint256 _baseAmount,
