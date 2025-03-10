@@ -106,7 +106,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         );
 
         emit StageCreated(
-            stages.length - 1,
+            uint32(stages.length - 1),
             _timeToStart,
             _timeToEnd,
             _timeToClaim,
@@ -146,7 +146,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
 
         require(msg.value > 0, "Presale: Should be greater than 0");
 
-        (, uint256 price, , uint256 updatedAt, ) = getLatestETHPrice();
+        (uint256 price, uint256 updatedAt) = getLatestETHPrice();
         require(price > 0, "Invalid price feed data");
         require(block.timestamp - updatedAt < 1 hours, "Stale price");
 
@@ -387,7 +387,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         emit REALWithdrawn(amount);
     }
 
-    function getLatestETHPrice() external view returns (uint256, uint256) {
+    function getLatestETHPrice() public view returns (uint256, uint256) {
         (, int256 price, , uint256 updatedAt, ) = priceFeed.latestRoundData();
         return ((uint256(price) * 10 ** 10), updatedAt); // Convert to 18 decimals
     }
