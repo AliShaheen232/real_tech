@@ -9,11 +9,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
-    // uint256 public HARDCAP = 1_100_000 ether;
-    uint256 public constant DENOMINATOR = 10000;
-    uint256 public realPriceInUSDT;
-    uint256 public realPriceInUSDC;
-    uint256 public realPriceInDAI;
     uint256 public HARDCAP;
     uint256 public totalDeposited;
     uint64 public icoDuration; // in seconds
@@ -56,9 +51,6 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         address _usdt,
         address _usdc,
         address _dai,
-        uint256 _realPriceInUSDT,
-        uint256 _realPriceInUSDC,
-        uint256 _realPriceInDAI,
         uint256 _hardCAP
     ) Ownable(msg.sender) {
         // priceFeed = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
@@ -69,9 +61,6 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         usdt = IERC20(_usdt);
         usdc = IERC20(_usdc);
         dai = IERC20(_dai);
-        realPriceInUSDT = _realPriceInUSDT;
-        realPriceInUSDC = _realPriceInUSDC;
-        realPriceInDAI = _realPriceInDAI;
         HARDCAP = _hardCAP;
     }
 
@@ -156,7 +145,8 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         //     (10 ** real.decimals())) /
         //     (stage.price * (10 ** usdt.decimals()) * (10 ** 26));
 
-        uint256 depositedAmount = (msg.value * price) / realPriceInUSDT;
+        uint256 depositedAmount = (msg.value * price) /
+            (stage.price * 10 ** real.decimals());
 
         userDeposited[_stageId][msg.sender] += depositedAmount;
         totalDeposited += depositedAmount;
@@ -193,7 +183,8 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         //     DENOMINATOR *
         //     (10 ** real.decimals())) / (stage.price * 10 ** usdt.decimals());
 
-        uint256 depositedAmount = _amount / realPriceInUSDT;
+        uint256 depositedAmount = (_amount * (10 ** real.decimals())) /
+            (stage.price * 10 ** usdt.decimals());
 
         userDeposited[_stageId][msg.sender] += depositedAmount;
         totalDeposited += depositedAmount;
@@ -229,7 +220,9 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         // uint256 depositedAmount = (_amount *
         //     DENOMINATOR *
         //     (10 ** real.decimals())) / (stage.price * 10 ** usdc.decimals());
-        uint256 depositedAmount = _amount / realPriceInUSDC;
+
+        uint256 depositedAmount = (_amount * (10 ** real.decimals())) /
+            (stage.price * 10 ** usdc.decimals());
 
         userDeposited[_stageId][msg.sender] += depositedAmount;
         totalDeposited += depositedAmount;
@@ -256,13 +249,14 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
 
         require(_amount > 0, "Presale: Should be greater than 0");
         SafeERC20.safeTransferFrom(
-            IERC20(address(usdc)),
+            IERC20(address(dai)),
             msg.sender,
             address(this),
             _amount
         );
 
-        uint256 depositedAmount = _amount / realPriceInDAI;
+        uint256 depositedAmount = (_amount * (10 ** real.decimals())) /
+            (stage.price * 10 ** dai.decimals());
 
         userDeposited[_stageId][msg.sender] += depositedAmount;
         totalDeposited += depositedAmount;
@@ -333,17 +327,6 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         if (block.timestamp > uint256(icoStartTime + icoDuration)) {
             return false;
         }
-        return true;
-    }
-
-    function setRealPriceT(
-        uint256 _realPriceInUSDT,
-        uint256 _realPriceInUSDC,
-        uint256 _realPriceInDAI
-    ) external onlyOwner returns (bool) {
-        realPriceInUSDT = _realPriceInUSDT;
-        realPriceInUSDC = _realPriceInUSDC;
-        realPriceInDAI = _realPriceInDAI;
         return true;
     }
 
@@ -446,3 +429,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
     event USDCWithdrawn(uint256 _amount);
     event REALWithdrawn(uint256 _amount);
 }
+
+// DAI decimals = 18
+// USDT decimals = 6
+// USDC decimals = 6
