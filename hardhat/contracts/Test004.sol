@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -16,10 +16,10 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
 
     AggregatorV3Interface internal priceFeed;
 
-    IERC20 public immutable real;
-    IERC20 public immutable usdt;
-    IERC20 public immutable usdc;
-    IERC20 public immutable dai;
+    IERC20Metadata public immutable real;
+    IERC20Metadata public immutable usdt;
+    IERC20Metadata public immutable usdc;
+    IERC20Metadata public immutable dai;
 
     mapping(uint32 => mapping(address => uint256)) public userDeposited;
     mapping(uint32 => mapping(address => bool)) public userClaimed;
@@ -57,10 +57,11 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         priceFeed = AggregatorV3Interface(
             0x694AA1769357215DE4FAC081bf1f309aDC325306
         );
-        real = IERC20(_real);
-        usdt = IERC20(_usdt);
-        usdc = IERC20(_usdc);
-        dai = IERC20(_dai);
+
+        real = IERC20Metadata(_real);
+        usdt = IERC20Metadata(_usdt);
+        usdc = IERC20Metadata(_usdc);
+        dai = IERC20Metadata(_dai);
         HARDCAP = _hardCAP;
     }
 
