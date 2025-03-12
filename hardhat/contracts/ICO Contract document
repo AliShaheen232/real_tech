@@ -1,0 +1,12 @@
+1. inherited a `Pausable Contract` library. By this we can pause the contract while in Buying and claiming (this mechanism will allow emergency contract pausing).
+
+2. inherited a `ReentrancyGuard Contract` library. By this we can add Reentrancy protection (ReentrancyGuard) which prevents double-spending attacks.
+
+3. `HARDCAP` set dynamically in the constructor than hardcoded constant.
+4. ICO Duration Management: Now owner can define and track the entire ICO period separately from individual stages.
+5. Changing timestamps (`timeToStart`, `timeToEnd`, `timeToClaim`) to uint64 (old is uint256), reducing storage cost.
+6. Changing stageID to uint32 (old is uint256), reducing storage cost.
+7. Changing uint256 to uint32 and uint64 for "Gas Optimization". 
+8. Added `DAI` support
+9. Methods for testing purposes `setICODuration` and `setHARDCAP`.
+10. Using modifier `validStage()` instead of writing redundant code statments in each method. 

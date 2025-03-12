@@ -46,6 +46,60 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         _;
     }
 
+    event ICOStarted(
+        uint64 _icoStartTime,
+        uint64 _icoEndTime,
+        uint64 _icoDuration
+    );
+    event StageCreated(
+        uint32 indexed _stageId,
+        uint64 _timeToStart,
+        uint64 _timeToEnd,
+        uint64 _timeToClaim,
+        uint256 _price
+    );
+    event StageUpdated(
+        uint32 indexed _stageId,
+        uint64 _timeToStart,
+        uint64 _timeToEnd,
+        uint64 _timeToClaim,
+        uint256 _price
+    );
+    event REALPurchasedWithETH(
+        address indexed _user,
+        uint32 indexed _stage,
+        uint256 _baseAmount,
+        uint256 _quoteAmount
+    );
+    event REALPurchasedWithUSDT(
+        address indexed _user,
+        uint32 indexed _stage,
+        uint256 _baseAmount,
+        uint256 _quoteAmount
+    );
+    event REALPurchasedWithUSDC(
+        address indexed _user,
+        uint32 indexed _stage,
+        uint256 _baseAmount,
+        uint256 _quoteAmount
+    );
+    event REALPurchasedWithDAI(
+        address indexed _user,
+        uint32 indexed _stage,
+        uint256 _baseAmount,
+        uint256 _quoteAmount
+    );
+    event REALClaimed(
+        address indexed _user,
+        uint32 indexed _stage,
+        uint256 _amount,
+        uint256 _timeStamp
+    );
+    event ETHWithdrawn(uint256 _amount);
+    event USDTWithdrawn(uint256 _amount);
+    event USDCWithdrawn(uint256 _amount);
+    event REALWithdrawn(uint256 _amount);
+
     constructor(
         address _real,
         address _usdt,
@@ -278,7 +332,7 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
     ) external whenNotPaused nonReentrant validStage(_stageId) {
         Stage storage stage = stages[_stageId];
         require(
-            block.timestamp > stage.timeToClaim,
+            block.timestamp >= stage.timeToClaim,
             "Presale: Invalid claim time"
         );
         require(
@@ -371,64 +425,22 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         emit REALWithdrawn(amount);
     }
 
+    // method `setHARDCAP`
+    // @dev - for testing purpose only
+    function setHARDCAP(uint256 hardcap) public onlyOwner {
+        HARDCAP = hardcap;
+    }
+
+    // method `setICODuration`
+    // @dev - for testing purpose only
+    function setICODuration(uint64 _icoDuration) public onlyOwner {
+        icoDuration = _icoDuration;
+    }
+
     function getLatestETHPrice() public view returns (uint256, uint256) {
         (, int256 price, , uint256 updatedAt, ) = priceFeed.latestRoundData();
         return ((uint256(price) * 10 ** 10), updatedAt); // Convert to 18 decimals
     }
-
-    event ICOStarted(
-        uint64 _icoStartTime,
-        uint64 _icoEndTime,
-        uint64 _icoDuration
-    );
-    event StageCreated(
-        uint32 indexed _stageId,
-        uint64 _timeToStart,
-        uint64 _timeToEnd,
-        uint64 _timeToClaim,
-        uint256 _price
-    );
-    event StageUpdated(
-        uint32 indexed _stageId,
-        uint64 _timeToStart,
-        uint64 _timeToEnd,
-        uint64 _timeToClaim,
-        uint256 _price
-    );
-    event REALPurchasedWithETH(
-        address indexed _user,
-        uint32 indexed _stage,
-        uint256 _baseAmount,
-        uint256 _quoteAmount
-    );
-    event REALPurchasedWithUSDT(
-        address indexed _user,
-        uint32 indexed _stage,
-        uint256 _baseAmount,
-        uint256 _quoteAmount
-    );
-    event REALPurchasedWithUSDC(
-        address indexed _user,
-        uint32 indexed _stage,
-        uint256 _baseAmount,
-        uint256 _quoteAmount
-    );
-    event REALPurchasedWithDAI(
-        address indexed _user,
-        uint32 indexed _stage,
-        uint256 _baseAmount,
-        uint256 _quoteAmount
-    );
-    event REALClaimed(
-        address indexed _user,
-        uint32 indexed _stage,
-        uint256 _amount,
-        uint256 _timeStamp
-    );
-    event ETHWithdrawn(uint256 _amount);
-    event USDTWithdrawn(uint256 _amount);
-    event USDCWithdrawn(uint256 _amount);
-    event REALWithdrawn(uint256 _amount);
 }
 
 // DAI decimals = 18
