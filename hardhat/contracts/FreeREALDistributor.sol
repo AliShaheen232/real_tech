@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -37,7 +37,7 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
             _distPercentage <= 4900,
             "Distribution percentage must be <= 49"
         );
-        real = IERC20Metadata(_real);
+        real = IERC20(_real);
         HARDCAP = _hardCAP;
         distPercentage = _distPercentage;
     }
@@ -54,7 +54,7 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
 
         require(
             (totalClaimed + _amount) <= HARDCAP,
-            "Presale: Hardcap reached"
+            "Hardcap reached"
         );
 
         totalClaimed += _amount;
@@ -68,7 +68,7 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
     function withdrawREAL(uint256 amount) external onlyOwner {
         require(
             real.balanceOf(address(this)) >= amount,
-            "Presale: Not enough REAL in contract"
+            "Not enough REAL in contract"
         );
         SafeERC20.safeTransfer(IERC20(address(real)), msg.sender, amount);
 
@@ -79,19 +79,27 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
         require(
             _distPercentage <= 4900,
             "Distribution percentage must be <= 49"
-        );
+        ); // @admin - {distPercentage} could be 49% maximum.
+
         distPercentage = _distPercentage;
+    }
+
+
+    function pause() public whenNotPaused {
+        _pause();
+    }
+
+    function unpause() public whenPaused {
+        _unpause();
+    }
+
+    function userClaimStatus(address user) public view returns (bool _status) {
+        if (userClaimedAmount[user] > 0) return true;
     }
 
     // method `setHARDCAP`
     // @dev - for testing purpose only
     function setHARDCAP(uint256 hardcap) public onlyOwner {
         HARDCAP = hardcap;
-    }
-
-    // method `setICODuration`
-    // @dev - for testing purpose only
-    function setICODuration(uint64 _icoDuration) public onlyOwner {
-        icoDuration = _icoDuration;
     }
 }

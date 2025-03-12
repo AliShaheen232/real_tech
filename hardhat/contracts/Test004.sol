@@ -425,6 +425,14 @@ contract REALtest003 is Ownable, ReentrancyGuard, Pausable {
         emit REALWithdrawn(amount);
     }
 
+    function pause() public whenNotPaused {
+        _pause();
+    }
+
+    function unpause() public whenPaused {
+        _unpause();
+    }
+
     // method `setHARDCAP`
     // @dev - for testing purpose only
     function setHARDCAP(uint256 hardcap) public onlyOwner {
