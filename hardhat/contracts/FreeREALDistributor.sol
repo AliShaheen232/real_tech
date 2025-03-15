@@ -8,7 +8,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
-    uint16 public constant DENOMINATOR = 10000;
+    uint16 public constant DENOMINATOR = 10000; // must be in multiple of 100
     uint256 public HARDCAP;
     uint256 public totalClaimed;
     IERC20 public real;
@@ -52,10 +52,7 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
         require(_amount > 0, "Zero Real balance!");
         _amount = (_amount * distPercentage) / DENOMINATOR;
 
-        require(
-            (totalClaimed + _amount) <= HARDCAP,
-            "Hardcap reached"
-        );
+        require((totalClaimed + _amount) <= HARDCAP, "Hardcap reached");
 
         totalClaimed += _amount;
         userClaimedAmount[msg.sender] = _amount;
@@ -83,7 +80,6 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
 
         distPercentage = _distPercentage;
     }
-
 
     function pause() public whenNotPaused {
         _pause();
