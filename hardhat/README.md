@@ -1,13 +1,11 @@
-# Sample Hardhat Project
+At time of deployment:
+1. Pass "REAL" token address
+2. Pass "HARDCAP" amount in WEI
+3. Pass "distPercentage" distributionn percentange value in multiple of "100". e.g. for 10% pass 10000 and for 21.05% pass 2105
+4. Deposit REAL tokens in this deployed contract.
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+Claiming Process: 
+1. Users can claim free tokens only once in their lifetime.
+2. The contract checks the user's REAL token balance. It calculates the claimable amount based on the `distPercentage`, and it could be 49% maximum.
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.js
-```
+e.g. `distPercentage` is 10% (10000) and user's balance is "10 REAL tokens" then user able to claim "1 REAL token".
