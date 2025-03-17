@@ -8,7 +8,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
-    uint16 public constant DENOMINATOR = 10000; // must be in multiple of 100
+    uint16 public constant DENOMINATOR = 10000;
     uint256 public HARDCAP;
     uint256 public totalClaimed;
     IERC20 public real;
@@ -62,16 +62,6 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
         emit REALClaimed(msg.sender, _amount, block.timestamp);
     }
 
-    function withdrawREAL(uint256 amount) external onlyOwner {
-        require(
-            real.balanceOf(address(this)) >= amount,
-            "Not enough REAL in contract"
-        );
-        SafeERC20.safeTransfer(IERC20(address(real)), msg.sender, amount);
-
-        emit REALWithdrawn(amount);
-    }
-
     function setDistPercentage(uint16 _distPercentage) public onlyOwner {
         require(
             _distPercentage <= 4900,
@@ -89,13 +79,23 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
         _unpause();
     }
 
-    function userClaimStatus(address user) public view returns (bool _status) {
-        if (userClaimedAmount[user] > 0) return true;
-    }
-
     // method `setHARDCAP`
     // @dev - for testing purpose only
     function setHARDCAP(uint256 hardcap) public onlyOwner {
         HARDCAP = hardcap;
+    }
+
+    function withdrawREAL(uint256 amount) external onlyOwner {
+        require(
+            real.balanceOf(address(this)) >= amount,
+            "Not enough REAL in contract"
+        );
+        SafeERC20.safeTransfer(IERC20(address(real)), msg.sender, amount);
+
+        emit REALWithdrawn(amount);
+    }
+
+    function userClaimStatus(address user) public view returns (bool _status) {
+        if (userClaimedAmount[user] > 0) return true;
     }
 }
