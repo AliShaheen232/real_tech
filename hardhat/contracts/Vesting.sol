@@ -14,6 +14,7 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
         uint32 unlockTime;
     }
 
+    address public vestingFund;
     uint256 public vestingFund;
     IERC20 public realToken;
     UnlockDetail[] public ulockDetails;
