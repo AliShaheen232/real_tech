@@ -11,33 +11,68 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
     struct UnlockDetail {
         bool airdropStatus;
         uint16 percentage;
-        uint32 unlockTime;
+        uint32 unlockTime; // epoch time
     }
 
-    address public vestingFund;
-    uint256 public vestingFund;
+    address public beneficiary;
+    uint256 public vestingFunds; // @dev  - Cannot decrement this var 
+    uint256 public fundsTransferred; // @dev  - Therefore incrementing this var 
+    uint16 public demoniator = 10000;
     IERC20 public realToken;
-    UnlockDetail[] public ulockDetails;
+    UnlockDetail[] public unlockDetails;
 
     constructor(address _realToken) Ownable(msg.sender) {
         realToken = IERC20(_realToken);
     }
 
     function updateUnlockDetail(
-        uint16 _percentage,
-        uint32 _unlockTime
+        uint16[] memory _percentage,
+        uint32[] memory _unlockTime
     ) public onlyOwner {
-
-        delete
+        require(!vestingStatus(), "vesting transfer started");
+        delete unlockDetails;
+        require(
+            _percentage.length == _unlockTime.length,
+            "Array lengths are un-equal"
+        );
+        unlockDetails = new UnlockDetail[](_percentage.length);
+        for (uint i; i < _percentage.length; i++) {
+            unlockDetails[i].percentage = _percentage[i];
+            unlockDetails[i].unlockTime = _unlockTime[i];
+        }
     }
 
     function addFunds(uint256 _amount) public nonReentrant {
-        vestingFund += _amount;
+        require(!vestingStatus(), "vesting transfer started");
+        vestingFunds += _amount;
         realToken.transferFrom(msg.sender, address(this), _amount);
     }
 
-    // function airdrop() public onlyOwner nonReentrant {
+    function airdrop() public onlyOwner nonReentrant {
+        uint256 length = unlockDetails.length;
 
-    //     require(realToken.balanceOf(address(this)), "Low Balance");
-    // }
+        require(length > 0, "no Unlock detail");
+        require(vestingFunds > fundsTransferred, "Vesting Completed");
+
+        uint256 funds;
+        for (uint i; i < length; i++) {
+            if (unlockDetails[i].unlockTime <= block.timestamp) {
+                funds +=
+                    (vestingFunds * (uint256(unlockDetails[i].percentage))) /
+                    demoniator;
+            }
+        }
+
+        require(realToken.balanceOf(address(this)) >= funds, "Low Balance");
+        fundsTransferred += funds; // maintaing this var for restriction of any extra transfer, though there are other checks but i'm adding this extra check.  
+        realToken.transfer(beneficiary, funds);
+    }
+
+    function vestingStatus() public view returns (bool _status) {
+        for (uint i; i < unlockDetails.length; i++) {
+            if (unlockDetails[i].unlockTime <= block.timestamp) {
+                return true;
+            }
+        }
+    }
 }
