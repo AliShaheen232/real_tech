@@ -15,8 +15,8 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
     }
 
     address public beneficiary;
-    uint256 public vestingFunds; // @dev  - Cannot decrement this var 
-    uint256 public fundsTransferred; // @dev  - Therefore incrementing this var 
+    uint256 public vestingFunds; // @dev  - Cannot decrement this var
+    uint256 public fundsTransferred; // @dev  - Therefore incrementing this var
     uint16 public demoniator = 10000;
     IERC20 public realToken;
     UnlockDetail[] public unlockDetails;
@@ -25,7 +25,7 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
         realToken = IERC20(_realToken);
     }
 
-    function updateUnlockDetail(
+    function updateUnlockDetails(
         uint16[] memory _percentage,
         uint32[] memory _unlockTime
     ) public onlyOwner {
@@ -56,15 +56,17 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
 
         uint256 funds;
         for (uint i; i < length; i++) {
-            if (unlockDetails[i].unlockTime <= block.timestamp) {
+            if (unlockDetails[i].unlockTime <= block.timestamp && !unlockDetails[i].airdropStatus) {
                 funds +=
                     (vestingFunds * (uint256(unlockDetails[i].percentage))) /
                     demoniator;
+                unlockDetails[i].airdropStatus = true;
             }
         }
 
         require(realToken.balanceOf(address(this)) >= funds, "Low Balance");
-        fundsTransferred += funds; // maintaing this var for restriction of any extra transfer, though there are other checks but i'm adding this extra check.  
+        fundsTransferred += funds; // maintaing this var for restriction of any extra transfer, though there are other checks but i'm adding this extra check.
+
         realToken.transfer(beneficiary, funds);
     }
 
