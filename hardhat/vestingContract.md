@@ -16,3 +16,7 @@ The receiver will
 
 The "owner" from deployment will trigger the airdrop after each unlock date. and then the "reciever" will recieve the airdrop.
 So I will trigger the airdrop after each unlock date.. then the person receiving the tokens will recieve the airdrop..
+
+
+[2500,2500,2500,2500]
+[1743093360,1743093460,1743093560,1743093660]
