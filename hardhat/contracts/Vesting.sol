@@ -52,6 +52,16 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard {
             "Array lengths are un-equal"
         );
 
+        uint256 totalPercentage;
+        for (uint i; i < _percentage.length; i++) {
+            totalPercentage += _percentage[i];
+        }
+
+        require(
+            totalPercentage == demoniator,
+            "Sum of all percentages should be 100%"
+        );
+
         while (vestingSlots.length > 0) {
             vestingSlots.pop();
         }
@@ -101,7 +111,6 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard {
             }
         }
 
-        require(funds > 0, "Funds already transferred");
         require(realToken.balanceOf(address(this)) >= funds, "Low Balance");
         fundsTransferred += funds; // maintaing this var for restriction of any extra transfer, though there are other checks but i'm adding this extra check.
 
