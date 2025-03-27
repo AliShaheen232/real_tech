@@ -5,9 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
+contract FreeREALDistributor is Ownable, ReentrancyGuard {
     struct UnlockDetail {
         bool airdropStatus;
         uint16 percentage;
@@ -28,8 +27,9 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
     );
     event REALWithdrawn(address indexed _withdrawer, uint256 _amount);
 
-    constructor(address _realToken) Ownable(msg.sender) {
+    constructor(address _realToken, address _beneficiary) Ownable(msg.sender) {
         realToken = IERC20(_realToken);
+        beneficiary = _beneficiary;
     }
 
     function updateUnlockDetails(
@@ -37,7 +37,10 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
         uint32[] memory _unlockTime
     ) public onlyOwner {
         require(!vestingStatus(), "vesting transfer started");
-        delete unlockDetails;
+        
+        while (unlockDetails.length > 0) {
+            unlockDetails.pop();
+        }
         require(
             _percentage.length == _unlockTime.length,
             "Array lengths are un-equal"
