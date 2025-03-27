@@ -21,6 +21,13 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
     IERC20 public realToken;
     UnlockDetail[] public unlockDetails;
 
+    event AirdropREAL(
+        address indexed _beneficiary,
+        uint256 _amount,
+        uint256 airdropTime
+    );
+    event REALWithdrawn(address indexed _withdrawer, uint256 _amount);
+
     constructor(address _realToken) Ownable(msg.sender) {
         realToken = IERC20(_realToken);
     }
@@ -56,7 +63,10 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
 
         uint256 funds;
         for (uint i; i < length; i++) {
-            if (unlockDetails[i].unlockTime <= block.timestamp && !unlockDetails[i].airdropStatus) {
+            if (
+                unlockDetails[i].unlockTime <= block.timestamp &&
+                !unlockDetails[i].airdropStatus
+            ) {
                 funds +=
                     (vestingFunds * (uint256(unlockDetails[i].percentage))) /
                     demoniator;
@@ -68,6 +78,18 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
         fundsTransferred += funds; // maintaing this var for restriction of any extra transfer, though there are other checks but i'm adding this extra check.
 
         realToken.transfer(beneficiary, funds);
+
+        emit AirdropREAL(beneficiary, funds, block.timestamp);
+    }
+
+    function withdrawREAL(uint256 _amount) external onlyOwner {
+        require(
+            realToken.balanceOf(address(this)) >= _amount,
+            "Presale: Not enough REAL in contract"
+        );
+        realToken.transfer(msg.sender, _amount);
+
+        emit REALWithdrawn(msg.sender, _amount);
     }
 
     function vestingStatus() public view returns (bool _status) {
