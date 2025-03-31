@@ -138,7 +138,7 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard {
         }
     }
 
-    // function getVestingSlots() public view returns (VestingDetail[] memory) {
-    //     return vestingSlots;
-    // }
+    function getVestingSlots() public view returns (VestingDetail[] memory) {
+        return vestingSlots;
+    }
 }
