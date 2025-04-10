@@ -10,6 +10,9 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
+    using MessageHashUtils for bytes32;
+    using ECDSA for bytes32;
+
     uint256 public HARDCAP;
     uint256 public totalClaimed;
     uint256 claimableAmt;
@@ -39,13 +42,13 @@ contract FreeREALDistributor is Ownable, ReentrancyGuard, Pausable {
     }
 
     function claimREAL(
-        string calldata message,
-        bytes calldata signature
+        bytes32 message,
+        bytes memory signature
     ) external whenNotPaused nonReentrant {
         require(!userClaimed[msg.sender], "Free tokens already claimed");
 
-        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(bytes(message));
-        address signer = ECDSA.recover(hash, signature);
+        bytes32 hash = message.toEthSignedMessageHash();
+        address signer = hash.recover(signature);
 
         require(signer == clientSigner, "Invalid signer");
 

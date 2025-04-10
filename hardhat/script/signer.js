@@ -5,10 +5,10 @@ const web3 = new Web3.default(
 );
 
 const PVT_KEY =
-  "0x1f806af233b232a325874e13a7ccf63cb65e219165e956a684829cbfe3aac25e";
+  "0x1f806af233b232a325874e13a7ccf63cb65e219165e956a684829cbfe3aac25e"; // @dev - dummy address and private key 0x52C75ad49024dB2474cB8a581F625bee2E14e8E7
 const account = web3.eth.accounts.privateKeyToAccount(PVT_KEY);
 
-const userAddress = "0xFc917f58Cf1E2885636AbADA3307b6a3013a4959"; //@dev -  dummy user address replace this while calling from API
+const userAddress = "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2"; // @dev -  dummy user address replace this while calling from API
 
 const claimMessage = async (userAddress) => {
   const balance = await web3.eth.getBalance(userAddress);
@@ -35,4 +35,3 @@ claimMessage(userAddress).then((message) => {
   console.log(` { message, signature }:`, { message, signature });
   return { message, signature };
 });
-// 0x52C75ad49024dB2474cB8a581F625bee2E14e8E7
