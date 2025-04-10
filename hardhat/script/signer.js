@@ -30,16 +30,9 @@ const signMessage = (message) => {
   return signed.signature;
 };
 
-const main = async () => {
-  let message;
-  let signature;
-};
-
-claimMessage(userAddress).then((m) => {
-  message = m;
+claimMessage(userAddress).then((message) => {
   signature = signMessage(message);
   console.log(` { message, signature }:`, { message, signature });
   return { message, signature };
 });
-main();
 // 0x52C75ad49024dB2474cB8a581F625bee2E14e8E7
