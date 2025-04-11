@@ -10,16 +10,19 @@ const PVT_KEY =
 const account = web3.eth.accounts.privateKeyToAccount(PVT_KEY);
 
 const userAddress = "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2"; // @dev -  require user address from F.E.
+const JWToken = "replace_with_original_jwtoken"; // @dev - replace with Original JWToken, also do a verification of this token to aviod any kind of bypass
 
 const claimMessage = async (userAddress) => {
   const balance = await web3.eth.getBalance(userAddress);
+
   const epochTime = Date.now();
 
   const text = web3.utils.soliditySha3(
     { type: "string", value: "CLAIM" },
     { type: "address", value: userAddress },
     { type: "uint256", value: balance },
-    { type: "uint256", value: epochTime }
+    { type: "uint256", value: epochTime },
+    { type: "string", value: JWToken }
   );
 
   fs.appendFileSync(
@@ -27,7 +30,7 @@ const claimMessage = async (userAddress) => {
     `\nCLAIM:${userAddress}:${balance}:${epochTime}`
   );
 
-  console.log("CLAIM:${userAddress}:${balance}:${epochTime}", text);
+  console.log(text);
   return text;
 };
 
@@ -38,7 +41,7 @@ const signMessage = (message) => {
 
 claimMessage(userAddress).then((message) => {
   signature = signMessage(message);
-  console.log(` { message, signature }:`, { message, signature });
+  console.log({ message, signature });
 
   return { message, signature };
 });
