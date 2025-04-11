@@ -27,7 +27,7 @@ const claimMessage = async (userAddress) => {
 
   fs.appendFileSync(
     "./claim_log.txt",
-    `\nCLAIM:${userAddress}:${balance}:${epochTime}`
+    `\nCLAIM:${userAddress}:${balance}:${epochTime}:${JWToken}`
   );
 
   console.log(text);
