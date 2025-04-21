@@ -5,125 +5,118 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract Vesting is Ownable, ReentrancyGuard {
-    
-    uint8 public unlockEvents; // @dev unlock event range 1-10
-    uint32 public unlockDuration; // @dev unlock duration range 1-120 months
+    using Strings for address;
+    using Strings for uint;
+
+    struct EventDetail {
+        uint8 eventNumber;
+        uint256 lockedAmount;
+        uint32 eventMaturityTime;
+        bool unlockStatus;
+    }
+
+    uint8 public totalEvents; // @dev unlock event range 1-10
+    uint8 public matureEvents;
+    uint32 public vestingDuration; // @dev unlock duration range 1-120 months
+    uint32 public startTime;
+    uint32 public lastUnlockTime;
+    uint32 public eventSpan;
     uint256 public lockedFund;
-    uint256 public releasedFund;
+    uint256 public unlockedFund;
     string[] public memo;
-    
+    EventDetail[] public eventDetails;
+
     IERC20 public realToken;
-    VestingDetail[] public vestingSlots;
 
-    event AirdropREAL(
-        address indexed _beneficiary,
-        uint256 _amount,
-        uint256 airdropTime
+    event VestingStarted(
+        uint256 amount,
+        uint8 totalEvents,
+        uint32 vestingDuration,
+        uint256 startTime
     );
-    event REALWithdrawn(address indexed _withdrawer, uint256 _amount);
-    event DepositFunds(uint256 _amount, uint256 _depositTime);
-    event UpdatedVestingSlots(uint16[] _percentage, uint32[] _unlockTime);
+    event UnlockedEvent(uint256 amount, uint8 eventCount, uint256 unlockedTime);
 
-    constructor(address _realToken, address _beneficiary) Ownable(msg.sender) {
+    function initialize(
+        address _realToken,
+        uint256 _amount,
+        uint8 _totalEvents,
+        uint8 _vestingDuration,
+        string memory _vestingMemo
+    ) public Ownable(msg.sender) {
+        // @dev - {_vestingDuration} must be in number of months. e.g. 1 ~ 1 month , 10 ~ 10 months
         require(
             _realToken != address(0),
             "Real token address cannot be zero address"
         );
-        require(
-            _beneficiary != address(0),
-            "Beneficiary address cannot be zero address"
-        );
+
         realToken = IERC20(_realToken);
-        beneficiary = _beneficiary;
-    }
+        lockedFund = _amount;
+        totalEvents = _totalEvents;
+        vestingDuration = _vestingDuration * uint32(30 days);
+        eventSpan = vestingDuration / totalEvents;
+        startTime = uint32(block.timestamp);
+        lastUnlockTime = startTime;
+        uint256 lockedAmountPerEvent = lockedFund / totalEvents;
 
-    function updateVestingSlots(
-        uint16[] memory _percentage,
-        uint32[] memory _unlockTime
-    ) public onlyOwner {
-        require(!vestingStatus(), "vesting transfer started");
-        require(
-            _percentage.length == _unlockTime.length,
-            "Array lengths are un-equal"
+        for (uint i = 1; i <= totalEvents; i++) {
+            EventDetail memory eventDetail = EventDetail({
+                eventNumber: i,
+                lockedAmount: lockedAmountPerEvent,
+                eventMaturityTime: (eventSpan * i) + block.timestamp,
+                unlockStatus: false
+            });
+        }
+
+        bytes memory __vestingMemo = abi.encodePacked(
+            "Vesting started: ",
+            _vestingMemo
         );
+        memo.push(string(__vestingMemo));
 
-        uint256 totalPercentage;
-        for (uint i; i < _percentage.length; i++) {
-            totalPercentage += _percentage[i];
-        }
-
-        require(
-            totalPercentage == demoniator,
-            "Sum of all percentages should be 100%"
-        );
-
-        while (vestingSlots.length > 0) {
-            vestingSlots.pop();
-        }
-
-        for (uint i; i < _percentage.length; i++) {
-            vestingSlots.push(
-                VestingDetail({
-                    airdropStatus: false,
-                    percentage: _percentage[i],
-                    unlockTime: _unlockTime[i]
-                })
-            );
-        }
-
-        emit UpdatedVestingSlots(_percentage, _unlockTime);
-    }
-
-    function depositFunds(uint256 _amount) public nonReentrant {
-        require(_amount > 0, "Amount cannot be zero");
-        require(!vestingStatus(), "vesting transfer started");
-        vestingFunds += _amount;
         SafeERC20.safeTransferFrom(
             realToken,
             msg.sender,
             address(this),
-            _amount
+            lockedFund
         );
-        emit DepositFunds(_amount, block.timestamp);
+
+        emit VestingStarted(
+            lockedFund,
+            totalEvents,
+            vestingDuration,
+            block.timestamp
+        );
     }
 
-    function airdrop() public onlyOwner nonReentrant {
-        uint256 length = vestingSlots.length;
-        require(vestingStatus(), "vesting transfer not started");
-        require(length > 0, "no Unlock detail");
-        require(vestingFunds > fundsTransferred, "Vesting Completed");
-
-        uint256 funds;
-        for (uint i; i < length; i++) {
-            if (
-                vestingSlots[i].unlockTime <= block.timestamp &&
-                !vestingSlots[i].airdropStatus
-            ) {
-                funds +=
-                    (vestingFunds * (uint256(vestingSlots[i].percentage))) /
-                    demoniator;
-                vestingSlots[i].airdropStatus = true;
-            }
-        }
-
-        require(realToken.balanceOf(address(this)) >= funds, "Low Balance");
-        fundsTransferred += funds; // maintaing this var for restriction of any extra transfer, though there are other checks but i'm adding this extra check.
-
-        SafeERC20.safeTransfer(realToken, beneficiary, funds);
-
-        emit AirdropREAL(beneficiary, funds, block.timestamp);
-    }
-
-    function withdrawREAL(uint256 _amount) external onlyOwner {
+    function unlockFund(string memory _vestingMemo) external onlyOwner {
         require(
-            realToken.balanceOf(address(this)) >= _amount,
-            "Low Real balance"
+            totalEvents > matureEvents && lockedFund > unlockedFund,
+            "unable to lock"
         );
+
+        require(
+            block.timestamp >= eventSpan + lastUnlockTime,
+            "Time has not completed"
+        );
+
+        lastUnlockTime = uint32(block.timestamp);
+        matureEvents++;
+
+        bytes memory __vestingMemo = abi.encodePacked(
+            "Memo:- To: ",
+            to.toHexString(),
+            ", Unlock time: "(block.timestamp).toString(),
+            ", ",
+            _vestingMemo
+        );
+        memo.push(string(__vestingMemo));
+
         SafeERC20.safeTransfer(realToken, msg.sender, _amount);
 
-        emit REALWithdrawn(msg.sender, _amount);
+        emit UnlockedEvent(_amount, eventCount, unlockedTime);
     }
 
     function vestingStatus() public view returns (bool _status) {
