@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract FreeREALDistributor is Ownable, ReentrancyGuard {
+contract Vesting is Ownable, ReentrancyGuard {
     struct VestingDetail {
         bool airdropStatus;
         uint16 percentage;

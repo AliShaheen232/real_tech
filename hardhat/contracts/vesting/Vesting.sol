@@ -6,17 +6,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract FreeREALDistributor is Ownable, ReentrancyGuard {
-    struct VestingDetail {
-        bool airdropStatus;
-        uint16 percentage;
-        uint32 unlockTime; // epoch time
-    }
-
-    address public beneficiary;
-    uint256 public vestingFunds; // @dev  - Cannot decrement this var
-    uint256 public fundsTransferred; // @dev  - Therefore incrementing this var
-    uint16 public demoniator = 10000;
+contract Vesting is Ownable, ReentrancyGuard {
+    
+    uint8 public unlockEvents; // @dev unlock event range 1-10
+    uint32 public unlockDuration; // @dev unlock duration range 1-120 months
+    uint256 public lockedFund;
+    uint256 public releasedFund;
+    string[] public memo;
+    
     IERC20 public realToken;
     VestingDetail[] public vestingSlots;
 
