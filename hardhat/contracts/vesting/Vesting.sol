@@ -52,6 +52,9 @@ contract Vesting is Ownable, ReentrancyGuard {
             "Real token address cannot be zero address"
         );
 
+        require(_totalEvents <= 10 && _totalEvents > 0, "Invalid total events");
+        require(_vestingDuration <= 120 && totalEvents > 0, "Invalid total events");
+
         realToken = IERC20(_realToken);
         lockedFund = _amount;
         totalEvents = _totalEvents;
