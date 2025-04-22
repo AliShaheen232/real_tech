@@ -53,9 +53,20 @@ contract Vesting is Ownable, ReentrancyGuard {
         );
 
         require(_totalEvents <= 10 && _totalEvents > 0, "Invalid total events");
-        require(_vestingDuration <= 120 && totalEvents > 0, "Invalid total events");
+        require(
+            _vestingDuration <= 120 && totalEvents > 0,
+            "Invalid total events"
+        );
 
         realToken = IERC20(_realToken);
+
+        SafeERC20.safeTransferFrom(
+            realToken,
+            msg.sender,
+            address(this),
+            _amount
+        );
+
         lockedFund = _amount;
         totalEvents = _totalEvents;
         vestingDuration = _vestingDuration * uint32(30 days);
@@ -71,6 +82,8 @@ contract Vesting is Ownable, ReentrancyGuard {
                 eventMaturityTime: (eventSpan * i) + block.timestamp,
                 unlockStatus: false
             });
+
+            eventDetails[i--] = eventDetail;
         }
 
         bytes memory __vestingMemo = abi.encodePacked(
@@ -78,13 +91,6 @@ contract Vesting is Ownable, ReentrancyGuard {
             _vestingMemo
         );
         memo.push(string(__vestingMemo));
-
-        SafeERC20.safeTransferFrom(
-            realToken,
-            msg.sender,
-            address(this),
-            lockedFund
-        );
 
         emit VestingStarted(
             lockedFund,
@@ -94,7 +100,13 @@ contract Vesting is Ownable, ReentrancyGuard {
         );
     }
 
-    function unlockFund(string memory _vestingMemo) external onlyOwner {
+    function unlockFund(
+        string memory _vestingMemo
+    )
+        external
+        onlyOwner
+        returns (uint256 amountToSent, string memory evString)
+    {
         require(
             totalEvents > matureEvents && lockedFund > unlockedFund,
             "unable to lock"
@@ -104,34 +116,52 @@ contract Vesting is Ownable, ReentrancyGuard {
             block.timestamp >= eventSpan + lastUnlockTime,
             "Time has not completed"
         );
+        uint8 _matureEvents;
+        uint arrayLen = eventDetails.length;
+        string memory eventNumbers_ = "";
+        bytes memory evBytes = new bytes(0);
 
-        lastUnlockTime = uint32(block.timestamp);
-        matureEvents++;
+        for (uint i; i < arrayLen; i++) {
+            if (eventDetails[i].eventMaturityTime <= block.timestamp) {
+                if (!eventDetails[i].unlockStatus) {
+                    amountToSent += eventDetails[i].lockedAmount;
+                    eventDetails[i].unlockStatus = true;
+                    _matureEvents++;
+
+                    bytes memory __eventsBytes = bytes(
+                        eventDetails[i].eventNumber.toString()
+                    );
+                    bytes memory eventsBytesEn;
+                    if (i < arrayLen - 1) {
+                        eventsBytesEn = abi.encodePacked(__eventsBytes, ", ");
+                    } else {
+                        eventsBytesEn = abi.encodePacked(__eventsBytes);
+                    }
+
+                    evBytes = bytes.concat(evBytes, eventsBytesEn);
+                }
+            }
+        }
+
+        require(_matureEvents > 0, "No amount to unlock");
+        matureEvents += _matureEvents;
 
         bytes memory __vestingMemo = abi.encodePacked(
-            "Memo:- To: ",
-            to.toHexString(),
+            "Memo:- Events: ",
+            evBytes.toString(),
+            ", Unlocked amount: ",
+            amountToSent,
             ", Unlock time: "(block.timestamp).toString(),
             ", ",
             _vestingMemo
         );
-        memo.push(string(__vestingMemo));
 
-        SafeERC20.safeTransfer(realToken, msg.sender, _amount);
+        evString = string(__vestingMemo);
+        memo.push(evString);
 
-        emit UnlockedEvent(_amount, eventCount, unlockedTime);
-    }
+        SafeERC20.safeTransfer(realToken, msg.sender, amountToSent);
 
-    function vestingStatus() public view returns (bool _status) {
-        for (uint i; i < vestingSlots.length; i++) {
-            if (vestingSlots[i].unlockTime <= block.timestamp) {
-                //@dev - checks if any single date has passed then it's returns "true". Means Vesting has started.
-                return true;
-            }
-        }
-    }
-
-    function getVestingSlots() public view returns (VestingDetail[] memory) {
-        return vestingSlots;
+        emit UnlockedEvent(amountToSent, matureEvents, unlockedTime);
+        return (amountToSent, evString);
     }
 }
