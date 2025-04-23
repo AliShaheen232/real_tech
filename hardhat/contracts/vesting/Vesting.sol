@@ -53,6 +53,8 @@ contract Vesting is Ownable, ReentrancyGuard {
         realToken = IERC20(_realToken);
         require(_totalEvents <= 10 && _totalEvents > 0, "Invalid total events");
 
+        // @dev - {_vestingDuration} must be in number of months. e.g. 1 ~ 1 month , 10 ~ 10 months
+
         require(
             _vestingDuration <= 120 && _vestingDuration > 0,
             "Invalid vesting duration"
@@ -65,15 +67,17 @@ contract Vesting is Ownable, ReentrancyGuard {
         startTime = uint32(block.timestamp);
         amountPerEvent = lockedFund / totalEvents;
 
-        for (uint i = 1; i <= totalEvents; i++) {
-            EventDetail memory eventDetail = EventDetail({
-                eventNumber: uint8(i),
+           for (uint8 i = 1; i <= totalEvents; ) {
+            eventDetails.push(EventDetail({
+                eventNumber: (i),
                 eventMaturityTime: (eventSpan * uint32(i)) +
                     uint32(block.timestamp),
                 unlockStatus: false
-            });
+            }));
 
-            eventDetails.push(eventDetail);
+            unchecked{
+                i++;
+            }
         }
 
         bytes memory __vestingMemo = abi.encodePacked(
