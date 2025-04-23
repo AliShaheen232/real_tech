@@ -13,19 +13,18 @@ contract Vesting is Ownable, ReentrancyGuard {
 
     struct EventDetail {
         uint8 eventNumber;
-        uint256 lockedAmount;
         uint32 eventMaturityTime;
         bool unlockStatus;
     }
 
     uint8 public totalEvents; // @dev unlock event range 1-10
-    uint8 public matureEvents;
+    uint8 public maturedEvents;
     uint32 public vestingDuration; // @dev unlock duration range 1-120 months
     uint32 public startTime;
-    uint32 public lastUnlockTime;
     uint32 public eventSpan;
     uint256 public lockedFund;
     uint256 public unlockedFund;
+    uint256 public amountPerEvent;
     string[] public memo;
     EventDetail[] public eventDetails;
 
@@ -39,18 +38,24 @@ contract Vesting is Ownable, ReentrancyGuard {
     );
     event UnlockedEvent(uint256 amount, uint8 eventCount, uint256 unlockedTime);
 
-    function initialize(
-        address _realToken,
-        uint256 _amount,
-        uint8 _totalEvents,
-        uint8 _vestingDuration,
-        string memory _vestingMemo
-    ) public Ownable(msg.sender) {
-        // @dev - {_vestingDuration} must be in number of months. e.g. 1 ~ 1 month , 10 ~ 10 months
+    constructor(
+        address _initialOwner,
+        address _realToken
+    ) Ownable(_initialOwner) {
         require(
             _realToken != address(0),
             "Real token address cannot be zero address"
         );
+        realToken = IERC20(_realToken);
+    }
+
+    function initialize(
+        uint256 _vestingAmount,
+        uint8 _totalEvents,
+        uint8 _vestingDuration,
+        string memory _vestingMemo
+    ) external {
+        // @dev - {_vestingDuration} must be in number of months. e.g. 1 ~ 1 month , 10 ~ 10 months
 
         require(_totalEvents <= 10 && _totalEvents > 0, "Invalid total events");
         require(
@@ -58,28 +63,18 @@ contract Vesting is Ownable, ReentrancyGuard {
             "Invalid total events"
         );
 
-        realToken = IERC20(_realToken);
-
-        SafeERC20.safeTransferFrom(
-            realToken,
-            msg.sender,
-            address(this),
-            _amount
-        );
-
-        lockedFund = _amount;
+        lockedFund = _vestingAmount;
         totalEvents = _totalEvents;
         vestingDuration = _vestingDuration * uint32(30 days);
         eventSpan = vestingDuration / totalEvents;
         startTime = uint32(block.timestamp);
-        lastUnlockTime = startTime;
-        uint256 lockedAmountPerEvent = lockedFund / totalEvents;
+        amountPerEvent = lockedFund / totalEvents;
 
         for (uint i = 1; i <= totalEvents; i++) {
             EventDetail memory eventDetail = EventDetail({
-                eventNumber: i,
-                lockedAmount: lockedAmountPerEvent,
-                eventMaturityTime: (eventSpan * i) + block.timestamp,
+                eventNumber: uint8(i),
+                eventMaturityTime: (eventSpan * uint32(i)) +
+                    uint32(block.timestamp),
                 unlockStatus: false
             });
 
@@ -107,29 +102,21 @@ contract Vesting is Ownable, ReentrancyGuard {
         onlyOwner
         returns (uint256 amountToSent, string memory evString)
     {
-        require(
-            totalEvents > matureEvents && lockedFund > unlockedFund,
-            "unable to lock"
-        );
+        require(totalEvents > maturedEvents, "Vesting completed");
+        require(lockedFund > unlockedFund, "unable to lock");
 
-        require(
-            block.timestamp >= eventSpan + lastUnlockTime,
-            "Time has not completed"
-        );
-        uint8 _matureEvents;
+        uint8 _maturedEvents;
         uint arrayLen = eventDetails.length;
-        string memory eventNumbers_ = "";
         bytes memory evBytes = new bytes(0);
 
         for (uint i; i < arrayLen; i++) {
             if (eventDetails[i].eventMaturityTime <= block.timestamp) {
                 if (!eventDetails[i].unlockStatus) {
-                    amountToSent += eventDetails[i].lockedAmount;
                     eventDetails[i].unlockStatus = true;
-                    _matureEvents++;
+                    _maturedEvents++;
 
                     bytes memory __eventsBytes = bytes(
-                        eventDetails[i].eventNumber.toString()
+                        uint(eventDetails[i].eventNumber).toString()
                     );
                     bytes memory eventsBytesEn;
                     if (i < arrayLen - 1) {
@@ -143,15 +130,19 @@ contract Vesting is Ownable, ReentrancyGuard {
             }
         }
 
-        require(_matureEvents > 0, "No amount to unlock");
-        matureEvents += _matureEvents;
+        require(_maturedEvents > 0, "No amount to unlock");
+
+        amountToSent = amountPerEvent * uint256(_maturedEvents);
+        maturedEvents += _maturedEvents;
+        unlockedFund += amountToSent;
 
         bytes memory __vestingMemo = abi.encodePacked(
             "Memo:- Events: ",
-            evBytes.toString(),
+            string(evBytes),
             ", Unlocked amount: ",
             amountToSent,
-            ", Unlock time: "(block.timestamp).toString(),
+            ", Unlock time: ",
+            (block.timestamp).toString(),
             ", ",
             _vestingMemo
         );
@@ -161,7 +152,7 @@ contract Vesting is Ownable, ReentrancyGuard {
 
         SafeERC20.safeTransfer(realToken, msg.sender, amountToSent);
 
-        emit UnlockedEvent(amountToSent, matureEvents, unlockedTime);
+        emit UnlockedEvent(amountToSent, maturedEvents, block.timestamp);
         return (amountToSent, evString);
     }
 }
