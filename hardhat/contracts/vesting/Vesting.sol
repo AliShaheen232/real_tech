@@ -40,27 +40,22 @@ contract Vesting is Ownable, ReentrancyGuard {
 
     constructor(
         address _initialOwner,
-        address _realToken
+        address _realToken,
+        uint256 _vestingAmount,
+        uint8 _totalEvents,
+        uint8 _vestingDuration,
+        string memory _vestingMemo
     ) Ownable(_initialOwner) {
         require(
             _realToken != address(0),
             "Real token address cannot be zero address"
         );
         realToken = IERC20(_realToken);
-    }
-
-    function initialize(
-        uint256 _vestingAmount,
-        uint8 _totalEvents,
-        uint8 _vestingDuration,
-        string memory _vestingMemo
-    ) external {
-        // @dev - {_vestingDuration} must be in number of months. e.g. 1 ~ 1 month , 10 ~ 10 months
-
         require(_totalEvents <= 10 && _totalEvents > 0, "Invalid total events");
+
         require(
-            _vestingDuration <= 120 && totalEvents > 0,
-            "Invalid total events"
+            _vestingDuration <= 120 && _vestingDuration > 0,
+            "Invalid vesting duration"
         );
 
         lockedFund = _vestingAmount;
@@ -78,7 +73,7 @@ contract Vesting is Ownable, ReentrancyGuard {
                 unlockStatus: false
             });
 
-            eventDetails[i--] = eventDetail;
+            eventDetails.push(eventDetail);
         }
 
         bytes memory __vestingMemo = abi.encodePacked(
@@ -93,6 +88,10 @@ contract Vesting is Ownable, ReentrancyGuard {
             vestingDuration,
             block.timestamp
         );
+    }
+
+    function initialize() external {
+        // @dev - {_vestingDuration} must be in number of months. e.g. 1 ~ 1 month , 10 ~ 10 months
     }
 
     function unlockFund(

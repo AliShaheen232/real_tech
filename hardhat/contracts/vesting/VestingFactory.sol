@@ -30,14 +30,21 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
         uint8 _vestingDuration,
         string memory _vestingMemo
     ) public nonReentrant whenNotPaused {
-        Vesting deployedVesting = new Vesting(msg.sender, address(realToken));
-
-        deployedVesting.initialize(
+        Vesting deployedVesting = new Vesting(
+            msg.sender,
+            address(realToken),
             _vestingAmount,
             _totalEvents,
             _vestingDuration,
             _vestingMemo
         );
+
+        // deployedVesting.initialize(
+        //     _vestingAmount,
+        //     _totalEvents,
+        //     _vestingDuration,
+        //     _vestingMemo
+        // );
 
         address _vestingAddress = address(deployedVesting);
         deployedContracts.push(_vestingAddress);

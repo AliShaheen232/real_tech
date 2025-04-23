@@ -7,14 +7,18 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("main ~ deployer address:", deployer.address);
 
-  const RealTestToken = await ethers.getContractFactory("RealTestToken");
-  const realTestToken = await RealTestToken.deploy(deployer.address);
-  const tokenAddress = await realTestToken.getAddress();
-  console.log("🚀 ~ main ~ realTestToken:", tokenAddress);
+  const Real = await ethers.getContractFactory("Real");
+  const real = await Real.deploy(deployer.address);
+  const realAddress = await real.getAddress();
+  console.log("🚀 ~ main ~ realTokenAddress:", realAddress);
 
-  const ICO = await ethers.getContractFactory("ICO");
-  const icoContract = await ICO.deploy(tokenAddress);
-  console.log("🚀 ~ main ~ icoContract:", await icoContract.getAddress());
+  const VestingFactory = await ethers.getContractFactory("VestingFactory");
+  const vestingFactory = await VestingFactory.deploy(
+    deployer.address,
+    realAddress
+  );
+  const vestingAddress = await vestingFactory.getAddress();
+  console.log("🚀 ~ main ~ factory:", vestingAddress);
 
   // ================== UPGRADE ================= 0xF078D98e80073F23139381A6E0Ea119C3Fa06fF6
   // for contract upgrade,  use below code.
