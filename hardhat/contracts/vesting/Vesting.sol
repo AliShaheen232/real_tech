@@ -150,7 +150,7 @@ contract Vesting is Ownable, ReentrancyGuard {
             "Memo:- Events: ",
             string(evBytes),
             ", Unlocked amount: ",
-            amountToSent,
+            (amountToSent).toString(),
             ", Unlock time: ",
             (block.timestamp).toString(),
             ", ",
