@@ -12,7 +12,7 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
     IERC20 public realToken;
     address[] public deployedContracts;
 
-    mapping(address => address) public contractsOwners;
+    mapping(address => address[]) public contractsOwners;
 
     event DeployedContracts(
         address indexed _contractAddress,
@@ -41,15 +41,9 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
             _vestingMemo
         );
 
-        // deployedVesting.initialize(
-        //     _vestingAmount,
-        //     _totalEvents,
-        //     _vestingDuration,
-        //     _vestingMemo
-        // );
-
         address _vestingAddress = address(deployedVesting);
         deployedContracts.push(_vestingAddress);
+        contractsOwners[msg.sender].push(_vestingAddress);
 
         SafeERC20.safeTransferFrom(
             realToken,

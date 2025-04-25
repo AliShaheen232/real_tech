@@ -84,8 +84,8 @@ contract Vesting is Ownable, ReentrancyGuard {
 
         bytes memory __vestingMemo = abi.encodePacked(
             "Memo:- Vesting started: ",
-            ", locked amount: ",
-            lockedFund,
+            " locked amount: ",
+            (lockedFund).toString(),
             ", Start time: ",
             (block.timestamp).toString(),
             ", ",
