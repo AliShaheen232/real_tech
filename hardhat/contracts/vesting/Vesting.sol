@@ -67,21 +67,28 @@ contract Vesting is Ownable, ReentrancyGuard {
         startTime = uint32(block.timestamp);
         amountPerEvent = lockedFund / totalEvents;
 
-           for (uint8 i = 1; i <= totalEvents; ) {
-            eventDetails.push(EventDetail({
-                eventNumber: (i),
-                eventMaturityTime: (eventSpan * uint32(i)) +
-                    uint32(block.timestamp),
-                unlockStatus: false
-            }));
+        for (uint8 i = 1; i <= totalEvents; ) {
+            eventDetails.push(
+                EventDetail({
+                    eventNumber: (i),
+                    eventMaturityTime: (eventSpan * uint32(i)) +
+                        uint32(block.timestamp),
+                    unlockStatus: false
+                })
+            );
 
-            unchecked{
+            unchecked {
                 i++;
             }
         }
 
         bytes memory __vestingMemo = abi.encodePacked(
-            "Vesting started: ",
+            "Memo:- Vesting started: ",
+            ", locked amount: ",
+            lockedFund,
+            ", Start time: ",
+            (block.timestamp).toString(),
+            ", ",
             _vestingMemo
         );
         memo.push(string(__vestingMemo));

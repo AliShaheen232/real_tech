@@ -12,6 +12,8 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
     IERC20 public realToken;
     address[] public deployedContracts;
 
+    mapping(address => address) public contractsOwners;
+
     event DeployedContracts(
         address indexed _contractAddress,
         address indexed _deployerAddress
