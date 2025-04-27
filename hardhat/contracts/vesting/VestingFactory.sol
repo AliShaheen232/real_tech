@@ -11,12 +11,14 @@ import "./Vesting.sol";
 contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
     IERC20 public realToken;
     address[] public deployedContracts;
+    uint256 public totalLocked;
 
     mapping(address => address[]) public contractsOwners;
 
     event DeployedContracts(
         address indexed _contractAddress,
-        address indexed _deployerAddress
+        address indexed _deployerAddress,
+        uint256 _vestingAmount
     );
 
     constructor(
@@ -44,6 +46,7 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
         address _vestingAddress = address(deployedVesting);
         deployedContracts.push(_vestingAddress);
         contractsOwners[msg.sender].push(_vestingAddress);
+        totalLocked += _vestingAmount;
 
         SafeERC20.safeTransferFrom(
             realToken,
@@ -52,7 +55,7 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
             _vestingAmount
         );
 
-        emit DeployedContracts(_vestingAddress, msg.sender);
+        emit DeployedContracts(_vestingAddress, msg.sender, _vestingAmount);
     }
 
     function pause() public whenNotPaused onlyOwner {

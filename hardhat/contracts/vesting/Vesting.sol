@@ -102,7 +102,7 @@ contract Vesting is Ownable, ReentrancyGuard {
     }
 
     function unlockFund(
-        string memory _vestingMemo
+        string memory _unlockingMemo
     )
         external
         onlyOwner
@@ -142,7 +142,7 @@ contract Vesting is Ownable, ReentrancyGuard {
         maturedEvents += _maturedEvents;
         unlockedFund += amountToSent;
 
-        bytes memory __vestingMemo = abi.encodePacked(
+        bytes memory __unlockingMemo = abi.encodePacked(
             "Memo:- Events: ",
             string(evBytes),
             ", Unlocked amount: ",
@@ -150,10 +150,10 @@ contract Vesting is Ownable, ReentrancyGuard {
             ", Unlock time: ",
             (block.timestamp).toString(),
             ", ",
-            _vestingMemo
+            _unlockingMemo
         );
 
-        evString = string(__vestingMemo);
+        evString = string(__unlockingMemo);
         memo.push(evString);
 
         SafeERC20.safeTransfer(realToken, msg.sender, amountToSent);
