@@ -86,8 +86,4 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
         }
         return result;
     }
-
-    function getContractHash() public pure returns (bytes32) {
-        return keccak256(type(Vesting).creationCode);
-    }
 }

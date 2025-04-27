@@ -101,10 +101,6 @@ contract Vesting is Ownable, ReentrancyGuard {
         );
     }
 
-    function initialize() external {
-        // @dev - {_vestingDuration} must be in number of months. e.g. 1 ~ 1 month , 10 ~ 10 months
-    }
-
     function unlockFund(
         string memory _vestingMemo
     )
