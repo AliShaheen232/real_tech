@@ -14,9 +14,10 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
     uint256 public totalLocked;
 
     mapping(address => address[]) public contractsOwners;
-    address[] public allowedTokens;
+    mapping(IERC20 => bool) public allowedTokens;
 
     event DeployedContracts(
+        address indexed _tokenAddress,
         address indexed _contractAddress,
         address indexed _deployerAddress,
         uint256 _vestingAmount
@@ -26,18 +27,22 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
         address _initialOwner,
         address _realToken
     ) Ownable(_initialOwner) {
-        realToken = IERC20(_realToken);
+        // realToken = IERC20(_realToken);
+        allowedTokens[IERC20(_realToken)] = true;
     }
 
     function deployVesting(
+        address _token,
         uint256 _vestingAmount,
         uint8 _totalEvents,
         uint8 _vestingDuration,
         string memory _vestingMemo
     ) public nonReentrant whenNotPaused {
+        const tokenERC20 = IERC20(_token);
+        require(allowedTokens[tokenERC20], "Unallowed token");
         Vesting deployedVesting = new Vesting(
             msg.sender,
-            address(realToken),
+            _token,
             _vestingAmount,
             _totalEvents,
             _vestingDuration,
@@ -50,13 +55,18 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
         totalLocked += _vestingAmount;
 
         SafeERC20.safeTransferFrom(
-            realToken,
+            tokenERC20,
             msg.sender,
             _vestingAddress,
             _vestingAmount
         );
 
-        emit DeployedContracts(_vestingAddress, msg.sender, _vestingAmount);
+        emit DeployedContracts(
+            _token,
+            _vestingAddress,
+            msg.sender,
+            _vestingAmount
+        );
     }
 
     function pause() public whenNotPaused onlyOwner {
@@ -65,6 +75,10 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
 
     function unpause() public whenPaused onlyOwner {
         _unpause();
+    }
+
+    function changeTokenStatus(address _token, bool _status) public onlyOwner {
+        allowedTokens[IERC20(_token)] = _status;
     }
 
     function getPaginatedDeployedAddresses(
