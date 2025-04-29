@@ -14,6 +14,7 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
     uint256 public totalLocked;
 
     mapping(address => address[]) public contractsOwners;
+    address[] public allowedTokens;
 
     event DeployedContracts(
         address indexed _contractAddress,
