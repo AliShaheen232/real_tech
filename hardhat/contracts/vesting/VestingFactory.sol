@@ -38,7 +38,7 @@ contract VestingFactory is Ownable, ReentrancyGuard, Pausable {
         uint8 _vestingDuration,
         string memory _vestingMemo
     ) public nonReentrant whenNotPaused {
-        const tokenERC20 = IERC20(_token);
+        IERC20 tokenERC20 = IERC20(_token);
         require(allowedTokens[tokenERC20], "Unallowed token");
         Vesting deployedVesting = new Vesting(
             msg.sender,

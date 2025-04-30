@@ -28,7 +28,7 @@ contract Vesting is Ownable, ReentrancyGuard {
     string[] public memo;
     EventDetail[] public eventDetails;
 
-    IERC20 public realToken;
+    IERC20 public token;
 
     event VestingStarted(
         uint256 amount,
@@ -40,17 +40,17 @@ contract Vesting is Ownable, ReentrancyGuard {
 
     constructor(
         address _initialOwner,
-        address _realToken,
+        address _token,
         uint256 _vestingAmount,
         uint8 _totalEvents,
         uint8 _vestingDuration,
         string memory _vestingMemo
     ) Ownable(_initialOwner) {
         require(
-            _realToken != address(0),
-            "Real token address cannot be zero address"
+            _token != address(0),
+            "Token address cannot be zero address"
         );
-        realToken = IERC20(_realToken);
+        token = IERC20(_token);
         require(_totalEvents <= 10 && _totalEvents > 0, "Invalid total events");
 
         // @dev - {_vestingDuration} must be in number of months. e.g. 1 ~ 1 month , 10 ~ 10 months
@@ -156,7 +156,7 @@ contract Vesting is Ownable, ReentrancyGuard {
         evString = string(__unlockingMemo);
         memo.push(evString);
 
-        SafeERC20.safeTransfer(realToken, msg.sender, amountToSent);
+        SafeERC20.safeTransfer(token, msg.sender, amountToSent);
 
         emit UnlockedEvent(amountToSent, maturedEvents, block.timestamp);
         return (amountToSent, evString);
